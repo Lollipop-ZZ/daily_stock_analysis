@@ -1,8 +1,10 @@
 # TradingAgents 试跑脚本：只跑 3 只验证（A股、港股、美股各一支）
 # 用法（key 由调用方从环境传入，不要把 key 写进文件）：
 #   GOOGLE_API_KEY=<key> ~/workspace/pro-analysis/.venv/bin/python ~/workspace/pro-analysis/run_3.py
-# 输出：每只的 decision（Buy/Overweight/Hold/Underweight/Sell + 理由）打印到 stdout，
-#       并写入 ~/workspace/pro-analysis/run_3_results.json；完整报告在 ~/.tradingagents/logs/
+# 输出：每只的 decision（Buy/Overweight/Hold/Underweight/Sell + 最终决策全文和
+#       各分析师报告）打印到 stdout，并写入 run_3_results.json；
+#       2026-11-20 17:20 修：之前只存了 decision 一个词，理由全丢了——
+#       现在把 final_state 里的 final_trade_decision 和四份报告也存进 JSON。
 import json
 import os
 import sys
@@ -36,9 +38,20 @@ def main():
     for ticker, name in TICKERS:
         print(f"\n===== {name} ({ticker}) @ {ANALYSIS_DATE} =====", flush=True)
         try:
-            _, decision = ta.propagate(ticker, ANALYSIS_DATE)
-            results[ticker] = {"name": name, "decision": decision}
+            final_state, decision = ta.propagate(ticker, ANALYSIS_DATE)
+            results[ticker] = {
+                "name": name,
+                "decision": decision,
+                "final_trade_decision": final_state.get("final_trade_decision"),
+                "market_report": final_state.get("market_report"),
+                "sentiment_report": final_state.get("sentiment_report"),
+                "news_report": final_state.get("news_report"),
+                "fundamentals_report": final_state.get("fundamentals_report"),
+                "trader_investment_plan": final_state.get("trader_investment_plan"),
+                "investment_plan": final_state.get("investment_plan"),
+            }
             print(f"--- {ticker} decision ---\n{decision}\n", flush=True)
+            print(f"--- {ticker} final_trade_decision ---\n{final_state.get('final_trade_decision')}\n", flush=True)
         except Exception as e:
             results[ticker] = {"name": name, "error": f"{type(e).__name__}: {e}"}
             print(f"--- {ticker} FAILED: {e} ---\n", flush=True)
