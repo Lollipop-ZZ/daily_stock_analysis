@@ -11,8 +11,10 @@
 #   gemini-2.5-flash 已停用、gemini-2.0-flash 已退役，换模型走不通，别试。
 name: TradingAgents 3-stock analysis
 
+
 on:
   workflow_dispatch:
+
 
 jobs:
   analyze:
@@ -24,7 +26,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install TradingAgents
-        run: pip install "tradingagents==0.7.1"
+        run: pip install "git+https://github.com/TauricResearch/TradingAgents.git@9fa1196"
       - name: Run 3-stock analysis
         env:
           GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
