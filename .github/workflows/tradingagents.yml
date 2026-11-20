@@ -1,0 +1,40 @@
+# TradingAgents 工作流（准备推到 Lollipop-ZZ/daily_stock_analysis 用）
+#
+# 用法（需用户确认后才推）：
+#   1. 把本文件推到 fork 的 .github/workflows/tradingagents.yml
+#   2. 把 ~/workspace/pro-analysis/run_3.py 推到 fork 的 tradingagents/run_3.py
+#      （脚本从环境读 GOOGLE_API_KEY 和模型名，不用改）
+#   3. 在 Actions 里手动触发（workflow_dispatch），跑完下载 tradingagents-results 产物
+# 前置条件：fork 里已有 GEMINI_API_KEY secret（已有）。
+# 注意：gemini-3.6-flash 的免费额度在 2026-11-20 凌晨被耗尽（429），
+#   每天配额在太平洋时间午夜（北京时间 16:00）重置——16:00 前跑大概率还是 429。
+#   gemini-2.5-flash 已停用、gemini-2.0-flash 已退役，换模型走不通，别试。
+name: TradingAgents 3-stock analysis
+
+on:
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install TradingAgents
+        run: pip install "tradingagents==0.7.1"
+      - name: Run 3-stock analysis
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TRADINGAGENTS_LLM_PROVIDER: google
+          TRADINGAGENTS_DEEP_THINK_LLM: gemini-3.6-flash
+          TRADINGAGENTS_QUICK_THINK_LLM: gemini-3.5-flash-lite
+        run: python tradingagents/run_3.py
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: tradingagents-results
+          path: tradingagents/run_3_results.json
+          if-no-files-found: warn
